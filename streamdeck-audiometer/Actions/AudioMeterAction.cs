@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace AudioMeter.Actions
 {
@@ -253,7 +254,21 @@ namespace AudioMeter.Actions
         {
             if (mmDevice == null)
             {
-                SetMMDeviceFromDeviceName(settings.AudioDevice);
+                if (sender is Timer timer)
+                {
+                    var interval = timer.Interval;
+
+                    timer.Interval = 30000;
+
+                    SetMMDeviceFromDeviceName(settings.AudioDevice);
+
+                    timer.Interval = Math.Min(200, interval);
+
+                }
+                else // just a safe guard in case something else is calling us that isn't a timer we can control
+                {
+                    SetMMDeviceFromDeviceName(settings.AudioDevice);
+                }
             }
 
             if (mmDevice != null)
@@ -283,7 +298,7 @@ namespace AudioMeter.Actions
             }
 
             MMDeviceEnumerator enumerator = new MMDeviceEnumerator();
-            mmDevice = enumerator.EnumerateAudioEndPoints(DataFlow.All, DeviceState.Active).ToList().Where(d => d.FriendlyName == deviceName).FirstOrDefault();
+            mmDevice = enumerator.EnumerateAudioEndPoints(DataFlow.All, DeviceState.Active).ToList().FirstOrDefault(d => d.FriendlyName == deviceName);
         }
 
         private async Task DisplayMeter(int level)
